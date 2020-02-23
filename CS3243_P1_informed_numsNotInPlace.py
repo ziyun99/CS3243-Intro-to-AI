@@ -147,7 +147,7 @@ class Node(object):
         self.f = self.cost + self.heuristic
         #print(self.f)
 
-# count the inversions in this node, used for checking if there is a solution
+    # count the inversions in this node, used for checking if there is a solution
     def inv_count(self):
         N = self.N
         flattened = list(chain.from_iterable(init_state))           # convert 2D list to 1D

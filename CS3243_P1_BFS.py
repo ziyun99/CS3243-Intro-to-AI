@@ -4,11 +4,12 @@ import copy
 import queue as Q
 # from sets import Set 
 import datetime
+from itertools import chain
 
 # To print the puzzle in 2d matrix
 def print_state(state):
-	for i in range(len(state)):
-		print(state[i])
+    for i in range(len(state)):
+        print(state[i])
         if i == len(state) - 1:
             print("")
 
@@ -35,6 +36,7 @@ class Node(object):
         self.parent = parent
         self.action = action
         self.action_list = ["UP", "RIGHT", "DOWN", "LEFT"]
+        self.N = len(init_state)
         if (parent == None):
             self.generate_init_node()
         else:
@@ -116,7 +118,36 @@ class Node(object):
         if self.zero1 == 0:
             self.action_list.remove("RIGHT")
         if self.zero1 == n - 1:
-            self.action_list.remove("LEFT")    
+            self.action_list.remove("LEFT")
+
+    # count the inversions in this node, used for checking if there is a solution
+    def inv_count(self):
+        N = self.N
+        flattened = list(chain.from_iterable(init_state))  # convert 2D list to 1D
+        flattened.remove(0)
+        count = 0
+        for i in range(N * N - 2):
+            for j in range(i + 1, N * N - 1):
+                if (flattened[i] > flattened[j]):
+                    count += 1
+        return count
+
+    # check whether this node (initial node) has solution
+    # see link below for explanation of the checking process
+    # https://www.geeksforgeeks.org/check-instance-15-puzzle-solvable/
+    def solvable(self):
+        N = self.N
+        this_inv = self.inv_count()
+        if (N % 2 == 1):
+            return (this_inv % 2 + 1) % 2
+        elif (N % 2 == 0):
+            if ((N - self.zero0) % 2 == 0 and this_inv % 2 == 1) or (
+                    (N - self.zero0) % 2 == 1 and this_inv % 2 == 0):
+                return 1
+            else:
+                return 0
+        else:
+            return 0
 
 
 class Puzzle(object):
@@ -145,44 +176,47 @@ class Puzzle(object):
 
         # generate initial node, add it into the frontier
         node = Node(None, "NONE")
-        q.put(node) 
-        
-        while(not q.empty()):
-            ## for debugging purpose 
-            # print_queue(q) 
+        if not (node.solvable()):
+            print("Initial state has no solution!")
+        else:
+            q.put(node)
+            while (not q.empty()):
+                ## for debugging purpose
+                # print_queue(q)
 
-            node = q.get()
+                node = q.get()
 
-            ## To implement graph-search
-            visited.add(str(node.state)) 
-            
-            # print("Pop and expand:")
-            print(node.state)
-            print(node.cost)
-            # print("")
-            
-            # print("Explored set:")
-            # print(visited)
-            # print("")
+                ## To implement graph-search
+                visited.add(str(node.state))
 
-            ## goal test
-            if (node.state == self.goal_state):
-                print("Success: Goal found!")
-                success = True
-                end = datetime.datetime.now()
-                break
-
-            ## Expand the node, add all its successors/child_nodes into frontier  
-            # print("Generating child_node:")
-            for i in range(len(node.action_list)):
-                child_node = Node(node, node.action_list[i])
-                # q.put(child_node)
-                ## implementing graph-search, not adding visited node 
-                if not str(child_node.state) in visited:
-                    q.put(child_node)
-                # else:
-                #     print("visited, not added to frontier")
+                # print("Pop and expand:")
+                print(node.state)
+                print(node.cost)
                 # print("")
+
+                # print("Explored set:")
+                # print(visited)
+                # print("")
+
+                ## goal test
+                if (node.state == self.goal_state):
+                    print("Success: Goal found!")
+                    success = True
+                    end = datetime.datetime.now()
+                    break
+
+                ## Expand the node, add all its successors/child_nodes into frontier
+                # print("Generating child_node:")
+                for i in range(len(node.action_list)):
+                    child_node = Node(node, node.action_list[i])
+                    # q.put(child_node)
+                    ## implementing graph-search, not adding visited node
+                    if not str(child_node.state) in visited:
+                        q.put(child_node)
+                    # pq.put(child_node)
+                    # else:
+                    #     print("visited, not added to frontier")
+                    # print("")
 
         solution_path = []
         if success:
