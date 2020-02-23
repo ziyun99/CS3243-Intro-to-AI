@@ -7,6 +7,9 @@ import datetime
 import math
 
 # To print the puzzle in 2d matrix
+from itertools import chain
+
+
 def print_state(state):
     for i in range(len(state)):
         print(state[i])
@@ -40,6 +43,7 @@ class Node(object):
         self.action_list = ["UP", "RIGHT", "DOWN", "LEFT"]
         self.heuristic = 0      # to be computed
         self.f = 0              # to be computed
+        self.N = len(init_state)
         if (parent == None):
             self.generate_init_node()
         else:
@@ -51,7 +55,7 @@ class Node(object):
         print(self.action)
         print(str(self.state) + "  cost: " + str(self.cost))
         # print(self.action_list)
-        
+
 
     # comparator for priority queue
     def __lt__(self, other):
@@ -67,7 +71,7 @@ class Node(object):
     def generate_init_node(self):
         self.state = copy.deepcopy(init_state)
         self.find_zero()
-        self.generate_action() 
+        self.generate_action()
         self.cost = 0
         self.compute_f()
         # self.g = 0
@@ -83,7 +87,7 @@ class Node(object):
         # self.g = self.parent.cost + 1
         # self.h = self.compute_heuristic()
         # self.cost = self.g + self.h
-             
+
     # transition model/function
     # to generate child state based on parent state and input action
     def generate_child_state(self, zero0, zero1):
@@ -92,20 +96,20 @@ class Node(object):
             self.state[zero0][zero1 + 1] = 0
             self.zero1 = zero1 + 1
             self.zero0 = zero0
-            
-        elif self.action == "RIGHT": 
+
+        elif self.action == "RIGHT":
             self.state[zero0][zero1] = self.state[zero0][zero1 - 1]
-            self.state[zero0][zero1 - 1] = 0 
+            self.state[zero0][zero1 - 1] = 0
             self.zero1 = zero1 - 1
             self.zero0 = zero0
 
-        elif self.action == "UP": 
+        elif self.action == "UP":
             self.state[zero0][zero1] = self.state[zero0 + 1][zero1]
-            self.state[zero0 + 1][zero1] = 0 
+            self.state[zero0 + 1][zero1] = 0
             self.zero0 = zero0 + 1
             self.zero1 = zero1
-            
-        elif self.action == "DOWN":    
+
+        elif self.action == "DOWN":
             self.state[zero0][zero1] = self.state[zero0 - 1][zero1]
             self.state[zero0 - 1][zero1] = 0
             self.zero0 = zero0 - 1
@@ -142,15 +146,34 @@ class Node(object):
         self.compute_heuristic()
         self.f = self.cost + self.heuristic
         #print(self.f)
-'''
-    def __cmp__(self, other):
-        if self.f < other.f:
-            return -1
-        elif self.f == other.f:
-            return 0
+
+    # count the inversions in this node, used for checking if there is a solution
+    def inv_count(self):
+        N = self.N
+        flattened = list(chain.from_iterable(init_state))           # convert 2D list to 1D
+        flattened.remove(0)
+        count = 0
+        for i in range(N*N-2):
+            for j in range(i+1, N*N-1):
+                if(flattened[i] > flattened[j]):
+                    count += 1
+        return count
+
+    # check whether this node (initial node) has solution
+    # see link below for explanation of the checking process
+    # https://www.geeksforgeeks.org/check-instance-15-puzzle-solvable/
+    def solvable(self):
+        N = self.N
+        this_inv = self.inv_count()
+        if (N%2 == 1):
+            return (this_inv%2 + 1)%2
+        elif (N%2 == 0):
+            if ((N - self.zero0) % 2 == 0 and this_inv % 2 == 1) or ((N - self.zero0) % 2 == 1 and this_inv % 2 == 0):
+                return 1
+            else:
+                return 0
         else:
-            return 1
-            '''
+            return 0
 
 class Puzzle(object):
     def __init__(self, init_state, goal_state):
@@ -158,21 +181,21 @@ class Puzzle(object):
         self.init_state = init_state
         self.goal_state = goal_state
         # self.actions = ["UP", "RIGHT", "DOWN", "LEFT"]
-                    
+
     def solve(self):
         ##TODO
         ##implement your search algorithm here
-        
+
         success = False
         start = datetime.datetime.now()
 
         ## To implement graph-search
         visited = set()
-        
+
         ## To implement BFS, FIFO Queue
         #q = Q.Queue()
         ## To implement DFS, LIFO Queue, may not terminate, due to infinite depth on tree search
-        # q = Q.LifoQueue() 
+        # q = Q.LifoQueue()
         ## To implement UCS
         # q = Q.PriorityQueue()
         ## To implement A*
@@ -180,50 +203,52 @@ class Puzzle(object):
 
         # generate initial node, add it into the frontier
         node = Node(None, "NONE")
-        pq.put(node)
-        
-        while(not pq.empty()):
-            ## for debugging purpose 
-            # print_queue(q) 
+        if not (node.solvable()):
+            print("Initial state has no solution!")
+        else:
+            pq.put(node)
+            while(not pq.empty()):
+                ## for debugging purpose
+                # print_queue(q)
 
-            node = pq.get()
+                node = pq.get()
 
-            ## To implement graph-search
-            visited.add(str(node.state))
-            
-            # print("Pop and expand:")
-            print(node.state)
-            print(node.cost)
-            # print("")
-            
-            # print("Explored set:")
-            # print(visited)
-            # print("")
+                ## To implement graph-search
+                visited.add(str(node.state))
 
-            ## goal test
-            if (node.state == self.goal_state):
-                print("Success: Goal found!")
-                success = True
-                end = datetime.datetime.now()
-                break
-
-            ## Expand the node, add all its successors/child_nodes into frontier  
-            # print("Generating child_node:")
-            for i in range(len(node.action_list)):
-                child_node = Node(node, node.action_list[i])
-                # q.put(child_node)
-                ## implementing graph-search, not adding visited node 
-                if not str(child_node.state) in visited:
-                    pq.put(child_node)
-                #pq.put(child_node)
-                # else:
-                #     print("visited, not added to frontier")
+                # print("Pop and expand:")
+                print(node.state)
+                print(node.cost)
                 # print("")
+
+                # print("Explored set:")
+                # print(visited)
+                # print("")
+
+                ## goal test
+                if (node.state == self.goal_state):
+                    print("Success: Goal found!")
+                    success = True
+                    end = datetime.datetime.now()
+                    break
+
+                ## Expand the node, add all its successors/child_nodes into frontier
+                # print("Generating child_node:")
+                for i in range(len(node.action_list)):
+                    child_node = Node(node, node.action_list[i])
+                    # q.put(child_node)
+                    ## implementing graph-search, not adding visited node
+                    if not str(child_node.state) in visited:
+                        pq.put(child_node)
+                    #pq.put(child_node)
+                    # else:
+                    #     print("visited, not added to frontier")
+                    # print("")
 
         solution_path = []
         if success:
             print("Depth of goal: " + str(node.cost))
-            ## backtracking from goal node to init node, to find the solution path        
+            ## backtracking from goal node to init node, to find the solution path
             while(node.parent != None):
                 solution_path.append(node.action)
                 node = node.parent
@@ -237,7 +262,7 @@ class Puzzle(object):
         print("Number of visited nodes: " + str(len(visited)))
         print("Start time: " + start.strftime("%Y-%m-%d %H:%M:%S"))
         print("End time  : " + end.strftime("%Y-%m-%d %H:%M:%S"))
-        print("Time taken: " + str(end - start))    
+        print("Time taken: " + str(end - start))
 
         return solution_path
 
@@ -257,16 +282,16 @@ if __name__ == "__main__":
         raise IOError("Input file not found!")
 
     lines = f.readlines()
-    
+
     # n = num rows in input file
     n = len(lines)
-    # max_num = 2 to the power of n - 1 Typo 
+    # max_num = 2 to the power of n - 1 Typo
     max_num = n**2 - 1
 
     # Instantiate a 2D list of size n x n
     init_state = [[0 for i in range(n)] for j in range(n)]
     goal_state = [[0 for i in range(n)] for j in range(n)]
-    
+
     i,j = 0, 0
     for line in lines:
         for number in line.split(" "):
@@ -288,8 +313,8 @@ if __name__ == "__main__":
     puzzle = Puzzle(init_state, goal_state)
     ans = puzzle.solve()
 
-    # 'a' means append, 'w' means 'overwrite' 
-    # change 'a' to 'w', if u want to overwrite the content in the output file 
+    # 'a' means append, 'w' means 'overwrite'
+    # change 'a' to 'w', if u want to overwrite the content in the output file
     with open(sys.argv[2], 'w') as f:
         for answer in ans:
             f.write(answer+'\n')
