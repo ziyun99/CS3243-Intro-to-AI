@@ -1,7 +1,7 @@
 import os
 import sys
 import copy
-import queue as Q
+import Queue as Q
 # from sets import Set 
 import datetime
 from itertools import chain
@@ -209,7 +209,15 @@ class Puzzle(object):
                 # print("Generating child_node:")
                 for i in range(len(node.action_list)):
                     child_node = Node(node, node.action_list[i])
-                    # q.put(child_node)
+                    ## check if child_state equals to goal state to terminate earlier, save one depth of processing
+                    if (child_node.state == self.goal_state):
+                        print("Success: Goal found at child_node!")
+                        success = True
+                        end = datetime.datetime.now()
+                        break
+                    # if not (child_node.solvable()):
+                    #     print("Child state has no solution!")
+                    #     break
                     ## implementing graph-search, not adding visited node
                     if not str(child_node.state) in visited:
                         q.put(child_node)
@@ -217,6 +225,8 @@ class Puzzle(object):
                     # else:
                     #     print("visited, not added to frontier")
                     # print("")
+                if(success):
+                    break
 
         solution_path = []
         if success:
