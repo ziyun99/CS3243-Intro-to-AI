@@ -1,7 +1,7 @@
 import os
 import sys
 import copy
-import Queue as Q
+import queue as Q
 # from sets import Set 
 import datetime
 from itertools import chain
@@ -166,6 +166,7 @@ class Puzzle(object):
 
         ## To implement graph-search
         visited = set()
+        frontier = {}
         
         ## To implement BFS, FIFO Queue
         q = Q.Queue() 
@@ -180,11 +181,14 @@ class Puzzle(object):
             print("Initial state has no solution!")
         else:
             q.put(node)
+            frontier[str(node.state)] = node.cost
             while (not q.empty()):
                 ## for debugging purpose
                 # print_queue(q)
 
                 node = q.get()
+                if node.cost > frontier[str(node.state)]:
+                    continue
 
                 ## To implement graph-search
                 visited.add(str(node.state))
@@ -220,18 +224,22 @@ class Puzzle(object):
                     #     break
                     ## implementing graph-search, not adding visited node
                     if not str(child_node.state) in visited:
-                        q.put(child_node)
-                    # pq.put(child_node)
-                    # else:
-                    #     print("visited, not added to frontier")
-                    # print("")
-                if(success):
+                        # check whether state is in frontier already. If exist, update; else add into frontier.
+                        if str(child_node.state) in frontier:
+                            if child_node.cost < frontier[str(child_node.state)]:
+                                frontier[str(child_node.state)] = child_node.cost
+                        else:
+                            q.put(child_node)
+                            frontier[str(child_node.state)] = child_node.cost
+
+                if success:
                     break
 
         solution_path = []
         if success:
-            print("Depth of goal: " + str(node.cost))
-            ## backtracking from goal node to init node, to find the solution path        
+            print("Depth of goal: " + str(node.cost + 1))
+            ## backtracking from goal node to init node, to find the solution path
+            solution_path.append(child_node.action)
             while(node.parent != None):
                 solution_path.append(node.action)
                 node = node.parent

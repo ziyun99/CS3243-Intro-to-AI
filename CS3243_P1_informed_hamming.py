@@ -55,7 +55,7 @@ class Node(object):
         print(self.action)
         print(str(self.state) + "  cost: " + str(self.cost))
         # print(self.action_list)
-
+        
 
     # comparator for priority queue
     def __lt__(self, other):
@@ -71,7 +71,7 @@ class Node(object):
     def generate_init_node(self):
         self.state = copy.deepcopy(init_state)
         self.find_zero()
-        self.generate_action()
+        self.generate_action() 
         self.cost = 0
         self.compute_f()
         # self.g = 0
@@ -87,7 +87,7 @@ class Node(object):
         # self.g = self.parent.cost + 1
         # self.h = self.compute_heuristic()
         # self.cost = self.g + self.h
-
+             
     # transition model/function
     # to generate child state based on parent state and input action
     def generate_child_state(self, zero0, zero1):
@@ -96,20 +96,20 @@ class Node(object):
             self.state[zero0][zero1 + 1] = 0
             self.zero1 = zero1 + 1
             self.zero0 = zero0
-
-        elif self.action == "RIGHT":
+            
+        elif self.action == "RIGHT": 
             self.state[zero0][zero1] = self.state[zero0][zero1 - 1]
-            self.state[zero0][zero1 - 1] = 0
+            self.state[zero0][zero1 - 1] = 0 
             self.zero1 = zero1 - 1
             self.zero0 = zero0
 
-        elif self.action == "UP":
+        elif self.action == "UP": 
             self.state[zero0][zero1] = self.state[zero0 + 1][zero1]
-            self.state[zero0 + 1][zero1] = 0
+            self.state[zero0 + 1][zero1] = 0 
             self.zero0 = zero0 + 1
             self.zero1 = zero1
-
-        elif self.action == "DOWN":
+            
+        elif self.action == "DOWN":    
             self.state[zero0][zero1] = self.state[zero0 - 1][zero1]
             self.state[zero0 - 1][zero1] = 0
             self.zero0 = zero0 - 1
@@ -137,8 +137,8 @@ class Node(object):
             for col_num, col in enumerate(row):
                 (goal_row, goal_col) = divmod(col, width)
                 goal_col -= 1
-                hue += abs(goal_row - row_num)
-                hue += abs(goal_col - col_num)
+                if (goal_row != row_num) or (goal_col != col_num):
+                    hue += 1
         self.heuristic = hue
 
     # using evaluation function to compute expected total cost
@@ -181,21 +181,22 @@ class Puzzle(object):
         self.init_state = init_state
         self.goal_state = goal_state
         # self.actions = ["UP", "RIGHT", "DOWN", "LEFT"]
-
+                    
     def solve(self):
         ##TODO
         ##implement your search algorithm here
-
+        
         success = False
         start = datetime.datetime.now()
 
         ## To implement graph-search
         visited = set()
-
+        frontier = {}
+        
         ## To implement BFS, FIFO Queue
         #q = Q.Queue()
         ## To implement DFS, LIFO Queue, may not terminate, due to infinite depth on tree search
-        # q = Q.LifoQueue()
+        # q = Q.LifoQueue() 
         ## To implement UCS
         # q = Q.PriorityQueue()
         ## To implement A*
@@ -207,11 +208,14 @@ class Puzzle(object):
             print("Initial state has no solution!")
         else:
             pq.put(node)
-            while(not pq.empty()):
+            frontier[str(node.state)] = node.f
+            while (not pq.empty()):
                 ## for debugging purpose
                 # print_queue(q)
 
                 node = pq.get()
+                if node.f > frontier[str(node.state)]:
+                    continue
 
                 ## To implement graph-search
                 visited.add(str(node.state))
@@ -236,19 +240,31 @@ class Puzzle(object):
                 # print("Generating child_node:")
                 for i in range(len(node.action_list)):
                     child_node = Node(node, node.action_list[i])
-                    # q.put(child_node)
+                    ## check if child_state equals to goal state to terminate earlier, save one depth of processing
+                    if (child_node.state == self.goal_state):
+                        print("Success: Goal found at child_node!")
+                        success = True
+                        end = datetime.datetime.now()
+                        break
                     ## implementing graph-search, not adding visited node
                     if not str(child_node.state) in visited:
-                        pq.put(child_node)
-                    #pq.put(child_node)
-                    # else:
-                    #     print("visited, not added to frontier")
-                    # print("")
+                        # check whether state is in frontier already. If exist, update; else add into frontier.
+                        if str(child_node.state) in frontier:
+                            if child_node.f < frontier[str(child_node.state)]:
+                                frontier[str(child_node.state)] = child_node.f
+                        else:
+                            # child never visited and not in frontier, add it to frontier and visited.
+                            pq.put(child_node)
+                            frontier[str(child_node.state)] = child_node.f
+                            # visited.add(str(child_node.state))
+
+                if success:
+                    break
 
         solution_path = []
         if success:
             print("Depth of goal: " + str(node.cost))
-            ## backtracking from goal node to init node, to find the solution path
+            ## backtracking from goal node to init node, to find the solution path        
             while(node.parent != None):
                 solution_path.append(node.action)
                 node = node.parent
@@ -262,7 +278,7 @@ class Puzzle(object):
         print("Number of visited nodes: " + str(len(visited)))
         print("Start time: " + start.strftime("%Y-%m-%d %H:%M:%S"))
         print("End time  : " + end.strftime("%Y-%m-%d %H:%M:%S"))
-        print("Time taken: " + str(end - start))
+        print("Time taken: " + str(end - start))    
 
         return solution_path
 
@@ -282,16 +298,16 @@ if __name__ == "__main__":
         raise IOError("Input file not found!")
 
     lines = f.readlines()
-
+    
     # n = num rows in input file
     n = len(lines)
-    # max_num = 2 to the power of n - 1 Typo
+    # max_num = 2 to the power of n - 1 Typo 
     max_num = n**2 - 1
 
     # Instantiate a 2D list of size n x n
     init_state = [[0 for i in range(n)] for j in range(n)]
     goal_state = [[0 for i in range(n)] for j in range(n)]
-
+    
     i,j = 0, 0
     for line in lines:
         for number in line.split(" "):
@@ -313,8 +329,8 @@ if __name__ == "__main__":
     puzzle = Puzzle(init_state, goal_state)
     ans = puzzle.solve()
 
-    # 'a' means append, 'w' means 'overwrite'
-    # change 'a' to 'w', if u want to overwrite the content in the output file
+    # 'a' means append, 'w' means 'overwrite' 
+    # change 'a' to 'w', if u want to overwrite the content in the output file 
     with open(sys.argv[2], 'w') as f:
         for answer in ans:
             f.write(answer+'\n')
