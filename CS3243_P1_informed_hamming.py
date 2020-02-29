@@ -263,8 +263,9 @@ class Puzzle(object):
 
         solution_path = []
         if success:
-            print("Depth of goal: " + str(node.cost))
-            ## backtracking from goal node to init node, to find the solution path        
+            print("Depth of goal: " + str(node.cost + 1))
+            ## backtracking from goal node to init node, to find the solution path
+            solution_path.append(child_node.action)
             while(node.parent != None):
                 solution_path.append(node.action)
                 node = node.parent
