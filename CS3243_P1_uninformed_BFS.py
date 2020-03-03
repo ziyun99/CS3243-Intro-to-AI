@@ -1,7 +1,7 @@
 import os
 import sys
 import copy
-import queue as Q
+import Queue as Q
 # from sets import Set 
 import datetime
 from itertools import chain
@@ -66,18 +66,12 @@ class Node(object):
         self.find_zero()
         self.generate_action() 
         self.cost = 0
-        # self.g = 0
-        # self.h = self.compute_heuristic()
-        # self.cost = self.g + self.h
 
     def generate_child_node(self):
         self.state = copy.deepcopy(self.parent.state)
         self.generate_child_state(self.parent.zero0, self.parent.zero1)
         self.generate_action()
         self.cost = self.parent.cost + 1
-        # self.g = self.parent.cost + 1
-        # self.h = self.compute_heuristic()
-        # self.cost = self.g + self.h
              
     # transition model/function
     # to generate child state based on parent state and input action
@@ -162,6 +156,7 @@ class Puzzle(object):
         ##implement your search algorithm here
         
         success = False
+        is_child_node = False
         start = datetime.datetime.now()
 
         ## To implement graph-search
@@ -217,6 +212,7 @@ class Puzzle(object):
                     if (child_node.state == self.goal_state):
                         print("Success: Goal found at child_node!")
                         success = True
+                        is_child_node = True
                         end = datetime.datetime.now()
                         break
                     # if not (child_node.solvable()):
@@ -237,9 +233,12 @@ class Puzzle(object):
 
         solution_path = []
         if success:
-            print("Depth of goal: " + str(node.cost + 1))
+            depth = node.cost
+            if is_child_node:
+                depth += 1
+                solution_path.append(child_node.action)
+            print("Depth of goal: " + str(depth))
             ## backtracking from goal node to init node, to find the solution path
-            solution_path.append(child_node.action)
             while(node.parent != None):
                 solution_path.append(node.action)
                 node = node.parent
@@ -251,9 +250,9 @@ class Puzzle(object):
             solution_path = ["UNSOLVABLE"]
 
         print("Number of visited nodes: " + str(len(visited)))
+        print("Time taken: " + str(end - start))
         print("Start time: " + start.strftime("%Y-%m-%d %H:%M:%S"))
-        print("End time  : " + end.strftime("%Y-%m-%d %H:%M:%S"))
-        print("Time taken: " + str(end - start))    
+        print("End time  : " + end.strftime("%Y-%m-%d %H:%M:%S"))    
 
         return solution_path
 

@@ -1,7 +1,7 @@
 import os
 import sys
 import copy
-import queue as Q
+import Queue as Q
 #from sets import Set
 import datetime
 import math
@@ -74,9 +74,6 @@ class Node(object):
         self.generate_action()
         self.cost = 0
         self.compute_f()
-        # self.g = 0
-        # self.h = self.compute_heuristic()
-        # self.cost = self.g + self.h
 
     def generate_child_node(self):
         self.state = copy.deepcopy(self.parent.state)
@@ -84,9 +81,6 @@ class Node(object):
         self.generate_action()
         self.cost = self.parent.cost + 1
         self.compute_f()
-        # self.g = self.parent.cost + 1
-        # self.h = self.compute_heuristic()
-        # self.cost = self.g + self.h
 
     # transition model/function
     # to generate child state based on parent state and input action
@@ -131,15 +125,26 @@ class Node(object):
 
     # to generate heuristic value
     def compute_heuristic(self):
-        width = len(self.state[0])
         hue = 0
         for row_num, row in enumerate(self.state):
             for col_num, col in enumerate(row):
-                (goal_row, goal_col) = divmod(col, width)
-                goal_col -= 1
+                h = hue
+                (goal_row, goal_col) = divmod(col, n)
+                if col == 0:
+                    goal_col = n - 1
+                    goal_row = n - 1
+                elif (goal_col == 0):
+                    goal_col = n - 1
+                    goal_row -= 1
+                else:
+                    goal_col -= 1   
+                # heuristic (Manhattan distance) 
                 hue += abs(goal_row - row_num)
                 hue += abs(goal_col - col_num)
+                # print('num', col, 'dist', hue - h)
         self.heuristic = hue
+        # print(self.state)
+        # print(self.heuristic)
 
     # using evaluation function to compute expected total cost
     def compute_f(self):
@@ -187,6 +192,7 @@ class Puzzle(object):
         ##implement your search algorithm here
 
         success = False
+        is_child_node = False
         start = datetime.datetime.now()
 
         ## To implement graph-search
@@ -246,6 +252,7 @@ class Puzzle(object):
                     if (child_node.state == self.goal_state):
                         print("Success: Goal found at child_node!")
                         success = True
+                        is_child_node = True
                         end = datetime.datetime.now()
                         break
                     ## implementing graph-search, not adding visited node
@@ -265,9 +272,12 @@ class Puzzle(object):
 
         solution_path = []
         if success:
-            print("Depth of goal: " + str(node.cost + 1))
+            depth = node.cost
+            if is_child_node:
+                depth += 1
+                solution_path.append(child_node.action)
+            print("Depth of goal: " + str(depth))
             ## backtracking from goal node to init node, to find the solution path
-            solution_path.append(child_node.action)
             while(node.parent != None):
                 solution_path.append(node.action)
                 node = node.parent
@@ -279,9 +289,9 @@ class Puzzle(object):
             solution_path = ["UNSOLVABLE"]
 
         print("Number of visited nodes: " + str(len(visited)))
+        print("Time taken: " + str(end - start))
         print("Start time: " + start.strftime("%Y-%m-%d %H:%M:%S"))
         print("End time  : " + end.strftime("%Y-%m-%d %H:%M:%S"))
-        print("Time taken: " + str(end - start))
 
         return solution_path
 
