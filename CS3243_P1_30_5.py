@@ -29,4 +29,7 @@ if __name__ == "__main__":
             g.write(test_case + '\n')
 
         subprocess.call([sys.executable, 'CS3243_P1_30_1.py', folder + test_case, "out.txt"])
+        subprocess.call([sys.executable, 'CS3243_P1_30_2.py', folder + test_case, "out.txt"])
+        subprocess.call([sys.executable, 'CS3243_P1_30_3.py', folder + test_case, "out.txt"])
+        subprocess.call([sys.executable, 'CS3243_P1_30_4.py', folder + test_case, "out.txt"])
 
