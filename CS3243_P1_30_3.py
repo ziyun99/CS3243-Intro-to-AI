@@ -125,11 +125,11 @@ class Node(object):
 
     # to generate heuristic value
     def compute_heuristic(self):
-        width = len(self.state[0])
         hue = 0
         for row_num, row in enumerate(self.state):
             for col_num, col in enumerate(row):
-                (goal_row, goal_col) = divmod(col, width)
+                h = hue
+                (goal_row, goal_col) = divmod(col, n)
                 if col == 0:
                     goal_col = n - 1
                     goal_row = n - 1
@@ -137,15 +137,14 @@ class Node(object):
                     goal_col = n - 1
                     goal_row -= 1
                 else:
-                    goal_col -= 1 
-                # heuristic
-                if col_num != goal_col:
-                    hue += 1
-                if row_num != goal_row:
-                    hue += 1
+                    goal_col -= 1   
+                # heuristic (Manhattan distance) 
+                hue += abs(goal_row - row_num)
+                hue += abs(goal_col - col_num)
+                # print('num', col, 'dist', hue - h)
         self.heuristic = hue
-        print(self.state)
-        print(self.heuristic)
+        # print(self.state)
+        # print(self.heuristic)
 
     # using evaluation function to compute expected total cost
     def compute_f(self):
@@ -271,6 +270,7 @@ class Puzzle(object):
                 if success:
                     break
 
+        depth = 0
         solution_path = []
         if success:
             depth = node.cost
@@ -293,6 +293,9 @@ class Puzzle(object):
         print("Time taken: " + str(end - start))
         print("Start time: " + start.strftime("%Y-%m-%d %H:%M:%S"))
         print("End time  : " + end.strftime("%Y-%m-%d %H:%M:%S"))
+
+        with open('experiment_result.txt', 'a') as f:
+            f.write(str(depth) + " Informed_Manhattan: " + str(len(visited)) + '\n')
 
         return solution_path
 
