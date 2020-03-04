@@ -2,11 +2,14 @@ import os
 import sys
 import copy
 import Queue as Q
-# from sets import Set 
+#from sets import Set
 import datetime
-from itertools import chain
+import math
 
 # To print the puzzle in 2d matrix
+from itertools import chain
+
+
 def print_state(state):
     for i in range(len(state)):
         print(state[i])
@@ -30,12 +33,16 @@ Node in the search space.
 @param zero1: y-coordinate of the "0" in the puzzle
 @param action_list: list of possible actions from the current state
 @param cost:
+@param heuristic: expected cost from current state to goal
+@param f: evaluation function, passing through this node, the expected cost from init to goal
 '''
 class Node(object):
     def __init__(self, parent, action):
         self.parent = parent
         self.action = action
         self.action_list = ["UP", "RIGHT", "DOWN", "LEFT"]
+        self.heuristic = 0      # to be computed
+        self.f = 0              # to be computed
         self.N = len(init_state)
         if (parent == None):
             self.generate_init_node()
@@ -52,7 +59,7 @@ class Node(object):
 
     # comparator for priority queue
     def __lt__(self, other):
-        return self.cost < other.cost
+        return self.f < other.f
 
     def find_zero(self):
         for i in range(n):
@@ -66,12 +73,14 @@ class Node(object):
         self.find_zero()
         self.generate_action() 
         self.cost = 0
+        self.compute_f()
 
     def generate_child_node(self):
         self.state = copy.deepcopy(self.parent.state)
         self.generate_child_state(self.parent.zero0, self.parent.zero1)
         self.generate_action()
         self.cost = self.parent.cost + 1
+        self.compute_f()
              
     # transition model/function
     # to generate child state based on parent state and input action
@@ -114,15 +123,43 @@ class Node(object):
         if self.zero1 == n - 1:
             self.action_list.remove("LEFT")
 
+    # to generate heuristic value
+    def compute_heuristic(self):
+        width = len(self.state[0])
+        hue = 0
+        for row_num, row in enumerate(self.state):
+            for col_num, col in enumerate(row):
+                (goal_row, goal_col) = divmod(col, width)
+                if col == 0:
+                    goal_col = n - 1
+                    goal_row = n - 1
+                elif (goal_col == 0):
+                    goal_col = n - 1
+                    goal_row -= 1
+                else:
+                    goal_col -= 1  
+                # heuristic (Hamming distance / misplaced tiles) 
+                if (goal_row != row_num) or (goal_col != col_num):
+                    hue += 1
+        self.heuristic = hue
+        # print(self.state)
+        # print(self.heuristic)
+
+    # using evaluation function to compute expected total cost
+    def compute_f(self):
+        self.compute_heuristic()
+        self.f = self.cost + self.heuristic
+        #print(self.f)
+
     # count the inversions in this node, used for checking if there is a solution
     def inv_count(self):
         N = self.N
-        flattened = list(chain.from_iterable(init_state))  # convert 2D list to 1D
+        flattened = list(chain.from_iterable(init_state))           # convert 2D list to 1D
         flattened.remove(0)
         count = 0
-        for i in range(N * N - 2):
-            for j in range(i + 1, N * N - 1):
-                if (flattened[i] > flattened[j]):
+        for i in range(N*N-2):
+            for j in range(i+1, N*N-1):
+                if(flattened[i] > flattened[j]):
                     count += 1
         return count
 
@@ -132,17 +169,15 @@ class Node(object):
     def solvable(self):
         N = self.N
         this_inv = self.inv_count()
-        if (N % 2 == 1):
-            return (this_inv % 2 + 1) % 2
-        elif (N % 2 == 0):
-            if ((N - self.zero0) % 2 == 0 and this_inv % 2 == 1) or (
-                    (N - self.zero0) % 2 == 1 and this_inv % 2 == 0):
+        if (N%2 == 1):
+            return (this_inv%2 + 1)%2
+        elif (N%2 == 0):
+            if ((N - self.zero0) % 2 == 0 and this_inv % 2 == 1) or ((N - self.zero0) % 2 == 1 and this_inv % 2 == 0):
                 return 1
             else:
                 return 0
         else:
             return 0
-
 
 class Puzzle(object):
     def __init__(self, init_state, goal_state):
@@ -164,25 +199,27 @@ class Puzzle(object):
         frontier = {}
         
         ## To implement BFS, FIFO Queue
-        q = Q.Queue() 
+        #q = Q.Queue()
         ## To implement DFS, LIFO Queue, may not terminate, due to infinite depth on tree search
         # q = Q.LifoQueue() 
         ## To implement UCS
         # q = Q.PriorityQueue()
+        ## To implement A*
+        pq = Q.PriorityQueue()
 
         # generate initial node, add it into the frontier
         node = Node(None, "NONE")
         if not (node.solvable()):
             print("Initial state has no solution!")
         else:
-            q.put(node)
-            frontier[str(node.state)] = node.cost
-            while (not q.empty()):
+            pq.put(node)
+            frontier[str(node.state)] = node.f
+            while (not pq.empty()):
                 ## for debugging purpose
                 # print_queue(q)
 
-                node = q.get()
-                if node.cost > frontier[str(node.state)]:
+                node = pq.get()
+                if node.f > frontier[str(node.state)]:
                     continue
 
                 ## To implement graph-search
@@ -215,18 +252,17 @@ class Puzzle(object):
                         is_child_node = True
                         end = datetime.datetime.now()
                         break
-                    # if not (child_node.solvable()):
-                    #     print("Child state has no solution!")
-                    #     break
                     ## implementing graph-search, not adding visited node
                     if not str(child_node.state) in visited:
                         # check whether state is in frontier already. If exist, update; else add into frontier.
                         if str(child_node.state) in frontier:
-                            if child_node.cost < frontier[str(child_node.state)]:
-                                frontier[str(child_node.state)] = child_node.cost
+                            if child_node.f < frontier[str(child_node.state)]:
+                                frontier[str(child_node.state)] = child_node.f
                         else:
-                            q.put(child_node)
-                            frontier[str(child_node.state)] = child_node.cost
+                            # child never visited and not in frontier, add it to frontier and visited.
+                            pq.put(child_node)
+                            frontier[str(child_node.state)] = child_node.f
+                            # visited.add(str(child_node.state))
 
                 if success:
                     break
@@ -250,9 +286,12 @@ class Puzzle(object):
             solution_path = ["UNSOLVABLE"]
 
         print("Number of visited nodes: " + str(len(visited)))
-        print("Time taken: " + str(end - start))
+        print("Time taken: " + str(end - start))  
         print("Start time: " + start.strftime("%Y-%m-%d %H:%M:%S"))
-        print("End time  : " + end.strftime("%Y-%m-%d %H:%M:%S"))    
+        print("End time  : " + end.strftime("%Y-%m-%d %H:%M:%S"))  
+
+        with open('experiment_result.txt', 'a') as f:
+            f.write(str(depth) + " Informed_Hamming: " + str(len(visited)) + '\n')
 
         return solution_path
 

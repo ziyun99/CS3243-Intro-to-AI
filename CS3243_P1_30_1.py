@@ -290,6 +290,9 @@ class Puzzle(object):
         print("Start time: " + start.strftime("%Y-%m-%d %H:%M:%S"))
         print("End time  : " + end.strftime("%Y-%m-%d %H:%M:%S"))  
 
+        with open('experiment_result.txt', 'a') as f:
+            f.write(str(depth) + " Informed_Hamming: " + str(len(visited)) + '\n')
+
         return solution_path
 
 
