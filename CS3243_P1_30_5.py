@@ -9,11 +9,6 @@ import subprocess
 # To print the puzzle in 2d matrix
 from itertools import chain
 
-import CS3243_P1_30_1 as UninformedSearch
-import CS3243_P1_30_2 as InformedHeuristic1
-import CS3243_P1_30_3 as InformedHeuristic2
-import CS3243_P1_30_4 as InformedHeuristic3
-
 if __name__ == "__main__":
     # do NOT modify below
 

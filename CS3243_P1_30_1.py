@@ -308,6 +308,6 @@ if __name__ == "__main__":
 
     # 'a' means append, 'w' means 'overwrite' 
     # change 'a' to 'w', if u want to overwrite the content in the output file 
-    with open(sys.argv[2], 'w') as f:
+    with open(sys.argv[2], 'a') as f:
         for answer in ans:
             f.write(answer+'\n')
